@@ -16,7 +16,7 @@ Future<void> main() async {
 
     await inDirectory(projectDirectory, () async {
 
-      // To address "Failed to terminate" failure.
+      // To address "Failed to terminate" failure (#109697).
       section('Uninstall previously installed app');
 
       await flutter(
