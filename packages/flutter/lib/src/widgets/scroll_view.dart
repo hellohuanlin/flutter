@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import 'basic.dart';
 import 'debug.dart';
@@ -38,6 +39,8 @@ enum ScrollViewKeyboardDismissBehavior {
   /// `onDrag` means that the [ScrollView] will dismiss an on-screen keyboard
   /// when a drag begins.
   onDrag,
+
+  interactive,
 }
 
 /// A widget that combines a [Scrollable] and a [Viewport] to create an
@@ -489,6 +492,38 @@ abstract class ScrollView extends StatelessWidget {
           }
           return false;
         },
+      );
+    } else if (keyboardDismissBehavior == ScrollViewKeyboardDismissBehavior.interactive) {
+      return Listener(
+        onPointerDown: (PointerDownEvent event) {
+          print('onPointerDown: TextInput.onPointerDownInScrollView, engine should take snapshot)');
+          SystemChannels.textInput.invokeMethod<void>(
+            'TextInput.onPointerDownInScrollView',
+            <String, dynamic>{'y': event.position.dy},
+          );
+        },
+        onPointerMove: (PointerMoveEvent event) {
+          print('onPointerMove: TextInput.onPointerMoveInScrollView with event.position.dy, engine should animate screenshotKeyboard');
+          SystemChannels.textInput.invokeMethod<void>(
+            'TextInput.onPointerMoveInScrollView',
+            <String, dynamic>{'y': event.position.dy},
+          );
+        },
+        onPointerUp: (PointerUpEvent event) {
+          print('onPointerUp: send ScrollView.onPointerUpInScrollView with event.position.dy, engine should either show or hide the keyboard');
+          SystemChannels.textInput.invokeMethod<void>(
+            'TextInput.onPointerUpInScrollView',
+            <String, dynamic>{'y': event.position.dy},
+          );
+        },
+        onPointerCancel: (PointerCancelEvent event) {
+          print('onPointerCancel: send ScrollView.onPointerCancelInScrollView with event.position.dy, same as onPointerUp');
+          SystemChannels.textInput.invokeMethod<void>(
+            'TextInput.onPointerCancelInScrollView',
+            <String, dynamic>{'y': event.position.dy},
+          );
+        },
+        child: scrollableResult,
       );
     } else {
       return scrollableResult;

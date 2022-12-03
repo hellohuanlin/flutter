@@ -2909,6 +2909,12 @@ class EditableTextState extends State<EditableText> with AutomaticKeepAliveClien
   }
 
   @override
+  void resignFocusFromInteractiveKeyboard() {
+    print('resignFocusFromInteractiveKeyboard');
+    widget.focusNode.unfocus();
+  }
+
+  @override
   void performAction(TextInputAction action) {
     switch (action) {
       case TextInputAction.newline:

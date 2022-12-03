@@ -1123,6 +1123,9 @@ mixin TextInputClient {
   /// Notify client about new content insertion from Android keyboard.
   void insertContent(KeyboardInsertedContent content) {}
 
+  /// resign the focus from interactive keyboard scroll.
+  void resignFocusFromInteractiveKeyboard();
+
   /// Request from the input method that this client perform the given private
   /// command.
   ///
@@ -1767,6 +1770,7 @@ class TextInput {
 
   Future<dynamic> _handleTextInputInvocation(MethodCall methodCall) async {
     final String method = methodCall.method;
+    print('text_input.dart method: $method');
     if (method == 'TextInputClient.focusElement') {
       final List<dynamic> args = methodCall.arguments as List<dynamic>;
       _scribbleClients[args[0]]?.onScribbleFocus(Offset((args[1] as num).toDouble(), (args[2] as num).toDouble()));
@@ -1792,7 +1796,13 @@ class TextInput {
       return;
     }
     if (_currentConnection == null) {
+      print('current connection is null');
       return;
+    }
+
+    if (method == 'TextInputClient.didResignFirstResponder') {
+      print('channel method called: TextInputClient.didResignFirstResponder');
+      _currentConnection!._client.resignFocusFromInteractiveKeyboard();
     }
 
     // The requestExistingInputState request needs to be handled regardless of
