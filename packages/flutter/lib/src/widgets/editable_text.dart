@@ -4209,6 +4209,9 @@ class EditableTextState extends State<EditableText> with AutomaticKeepAliveClien
       return false;
     }
 
+    _textInputConnection!.showNativeEditMenu();
+    return true;
+
     if (_selectionOverlay == null) {
       return false;
     }

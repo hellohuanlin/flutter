@@ -1475,6 +1475,10 @@ class TextInputConnection {
     TextInput._instance._currentConnection = null;
     assert(!attached);
   }
+
+  void showNativeEditMenu() {
+    TextInput._instance._showNativeEditMenu();
+  }
 }
 
 TextInputAction _toTextInputAction(String action) {
@@ -1991,6 +1995,14 @@ class TextInput {
     }
   }
 
+
+  void _showNativeEditMenu() {
+    for (final TextInputControl control in _inputControls) {
+      control.showNativeEditMenu();
+    }
+  }
+
+
   void _setStyle({
     required String? fontFamily,
     required double? fontSize,
@@ -2215,6 +2227,8 @@ mixin TextInputControl {
   ///
   ///  * [TextInput.finishAutofillContext]
   void finishAutofillContext({bool shouldSave = true}) {}
+
+  void showNativeEditMenu() {}
 }
 
 /// Provides access to the platform text input control.
@@ -2364,4 +2378,12 @@ class _PlatformTextInputControl with TextInputControl {
       shouldSave,
     );
   }
+
+  @override
+  void showNativeEditMenu() {
+    _channel.invokeMethod<void>(
+      'TextInput.showNativeEditMenu'
+    );
+  }
+
 }
