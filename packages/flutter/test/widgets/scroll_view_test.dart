@@ -4,7 +4,7 @@
 
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'states.dart';
@@ -141,6 +141,54 @@ void main() {
     await tester.drag(finder, const Offset(0.0, -40.0));
     await tester.pumpAndSettle();
     expect(textField.focusNode!.hasFocus, isFalse);
+  });
+
+
+  testWidgets('ListView dismiss keyboard interactive test', (WidgetTester tester) async {
+    final List<FocusNode> focusNodes = List<FocusNode>.generate(50, (int i) => FocusNode());
+    final Key key = UniqueKey();
+    await tester.pumpWidget(textFieldBoilerplate(
+      child: ListView(
+        key: key,
+        padding: EdgeInsets.zero,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.interactive,
+        children: focusNodes.map((FocusNode focusNode) {
+          return Container(
+            height: 50,
+            color: Colors.green,
+            child: TextField(
+              focusNode: focusNode,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ));
+
+    final Finder finder = find.byType(TextField).first;
+    final TextField textField = tester.widget(finder);
+    await tester.showKeyboard(finder);
+    expect(textField.focusNode!.hasFocus, isTrue);
+
+
+    bool moveCalled = false;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.textInput, (MethodCall call) {
+      if (call.method == 'TextInput.onPointerMoveInScrollView') {
+        moveCalled = true;
+      }
+      return null;
+    });
+
+    final Offset downPosition = tester.getCenter(find.byKey(key)) + const Offset(10, 5);
+    final TestGesture gesture = await tester.startGesture(downPosition);
+    const Offset moved = Offset(700, 30);
+    await gesture.moveBy(moved);
+    await gesture.up();
+
+    expect(moveCalled, isTrue);
   });
 
   testWidgets('GridView.builder supports null items', (WidgetTester tester) async {
