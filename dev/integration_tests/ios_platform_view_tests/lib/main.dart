@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_driver/driver_extension.dart';
@@ -160,6 +161,13 @@ class _FocusTestPageState extends State<FocusTestPage> {
           ),
           TextField(
             controller: _controller,
+            contextMenuBuilder: (context, editableTextState) {
+              var children = <Widget>[];
+              for (var item in editableTextState.contextMenuButtonItems) {
+                children.add(CupertinoTextSelectionToolbarButton.buttonItem(buttonItem: item));
+              }
+              return AdaptiveTextSelectionToolbar(children: children, anchors: editableTextState.contextMenuAnchors);
+            },
           ),
         ],
       ),

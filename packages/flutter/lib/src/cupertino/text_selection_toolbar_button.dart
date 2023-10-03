@@ -4,8 +4,10 @@
 
 import 'dart:math';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../services.dart';
 import 'button.dart';
 import 'colors.dart';
 import 'debug.dart';
@@ -137,22 +139,50 @@ class _CupertinoTextSelectionToolbarButtonState extends State<CupertinoTextSelec
   @override
   Widget build(BuildContext context) {
     final Widget content = _getContentWidget(context);
-    final Widget child = CupertinoButton(
-      color: isPressed
-        ? _kToolbarPressedColor.resolveFrom(context)
-        : const Color(0x00000000),
-      borderRadius: null,
-      disabledColor: const Color(0x00000000),
-      // This CupertinoButton does not actually handle the onPressed callback,
-      // this is only here to correctly enable/disable the button (see
-      // GestureDetector comment below).
-      onPressed: widget.onPressed,
-      padding: _kToolbarButtonPadding,
-      // There's no foreground fade on iOS toolbar anymore, just the background
-      // is darkened.
-      pressedOpacity: 1.0,
-      child: content,
-    );
+
+    final Widget child;
+
+    if (widget.buttonItem?.type == ContextMenuButtonType.paste) {
+      child = SizedBox(
+          width: 100,
+          height: 50,
+          child: UiKitView(
+            viewType: 'paste_component',
+            layoutDirection: TextDirection.ltr,
+            creationParams: <String, dynamic>{},
+            creationParamsCodec: StandardMessageCodec(),
+            hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          ));
+
+      // child = Positioned.fill(
+      //   child: Padding(
+      //     padding: const EdgeInsets.only(
+      //         top: 10), // Moves down the UIPasteControl a bit for centralizing it
+      //     child: Transform.scale(
+      //       scale:
+      //       0.88, // Scales down the UIPasteControl to make it looks closer to the CupertinoTextSelectionToolbarButton
+      //       child:
+      //     ),
+      //   ),
+      // );
+    } else {
+      child = CupertinoButton(
+        color: isPressed
+            ? _kToolbarPressedColor.resolveFrom(context)
+            : const Color(0x00000000),
+        borderRadius: null,
+        disabledColor: const Color(0x00000000),
+        // This CupertinoButton does not actually handle the onPressed callback,
+        // this is only here to correctly enable/disable the button (see
+        // GestureDetector comment below).
+        onPressed: widget.onPressed,
+        padding: _kToolbarButtonPadding,
+        // There's no foreground fade on iOS toolbar anymore, just the background
+        // is darkened.
+        pressedOpacity: 1.0,
+        child: content,
+      );
+    }
 
     if (widget.onPressed != null) {
       // As it's needed to change the CupertinoButton's backgroundColor when
