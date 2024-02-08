@@ -4298,7 +4298,9 @@ class EditableTextState extends State<EditableText> with AutomaticKeepAliveClien
       return false;
     }
 
-    _textInputConnection!.showNativeEditMenu();
+    final bool enabled =  WidgetsBinding.instance.platformDispatcher.supportsShowingSystemContextMenu;
+
+    _textInputConnection!.showNativeEditMenu(enabled);
     return true;
 
     if (_selectionOverlay == null) {
@@ -5028,6 +5030,9 @@ class EditableTextState extends State<EditableText> with AutomaticKeepAliveClien
       const Set<TargetPlatform> mobilePlatforms = <TargetPlatform> {
         TargetPlatform.android, TargetPlatform.fuchsia,
       };
+      final     bool enabled =  WidgetsBinding.instance.platformDispatcher.supportsShowingSystemContextMenu;
+
+      print(enabled);
       final bool brieflyShowPassword = WidgetsBinding.instance.platformDispatcher.brieflyShowPassword
                                     && mobilePlatforms.contains(defaultTargetPlatform);
       if (brieflyShowPassword) {

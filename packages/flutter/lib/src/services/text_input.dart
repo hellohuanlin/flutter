@@ -1513,8 +1513,8 @@ class TextInputConnection {
     assert(!attached);
   }
 
-  void showNativeEditMenu() {
-    TextInput._instance._showNativeEditMenu();
+  void showNativeEditMenu(bool enabled) {
+    TextInput._instance._showNativeEditMenu(enabled);
   }
 }
 
@@ -2033,9 +2033,9 @@ class TextInput {
   }
 
 
-  void _showNativeEditMenu() {
+  void _showNativeEditMenu(bool enabled) {
     for (final TextInputControl control in _inputControls) {
-      control.showNativeEditMenu();
+      control.showNativeEditMenu(enabled);
     }
   }
 
@@ -2265,7 +2265,7 @@ mixin TextInputControl {
   ///  * [TextInput.finishAutofillContext]
   void finishAutofillContext({bool shouldSave = true}) {}
 
-  void showNativeEditMenu() {}
+  void showNativeEditMenu(bool enabled) {}
 }
 
 /// Provides access to the platform text input control.
@@ -2425,9 +2425,18 @@ class _PlatformTextInputControl with TextInputControl {
   }
 
   @override
-  void showNativeEditMenu() {
-    _channel.invokeMethod<void>(
-      'TextInput.showNativeEditMenu'
+  void showNativeEditMenu(bool enabled) {
+    print('enabled: $enabled');
+    SystemChannels.platform.invokeMethod<void>(
+      'ContextMenu.showSystemContextMenu',
+      <String, dynamic>{
+        'targetRect': <String, dynamic>{
+          'x': 100,
+          'y': 100,
+          'width': 100,
+          'height': 100,
+        },
+      }
     );
   }
 
