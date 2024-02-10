@@ -2436,6 +2436,38 @@ class _PlatformTextInputControl with TextInputControl {
           'width': 100,
           'height': 100,
         },
+        'items': <dynamic>[
+          <String, dynamic>{
+            'type': 'default',
+            'action': 'paste',
+          },
+          <String, dynamic>{
+            'type': 'default',
+            'action': 'cut',
+          },
+          <String, dynamic>{
+            'type': 'default',
+            'action': 'copy',
+          },
+          <String, dynamic>{
+            'type': 'default',
+            'action': 'selectAll',
+          },
+          <String, dynamic>{
+            'type': 'default',
+            'action': 'searchWeb',
+          },
+          <String, dynamic>{
+            'type': 'custom',
+            'title': 'ONE',
+            'callbackId': 'callback_1'
+          },
+          <String, dynamic>{
+            'type': 'custom',
+            'title': 'TWO',
+            'callbackId': 'callback_2'
+          },
+        ],
       }
     );
   }
