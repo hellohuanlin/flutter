@@ -1,0 +1,21 @@
+
+#ifndef FLUTTER_SHELL_PLATFORM_DARWIN_IOS_FRAMEWORK_HEADERS_FLUTTERSHAREVIEWCONTROLLER_H_
+#define FLUTTER_SHELL_PLATFORM_DARWIN_IOS_FRAMEWORK_HEADERS_FLUTTERSHAREVIEWCONTROLLER_H_
+#import <UIKit/UIKit.h>
+#import "FlutterViewController.h"
+
+typedef NS_ENUM(NSUInteger, FlutterShareViewControllerSwipeDismissStrategy) {
+  FlutterShareViewControllerSwipeDismissStrategyFullSheet,
+  FlutterShareViewControllerSwipeDismissStrategyTopRegion,
+  FlutterShareViewControllerSwipeDismissStrategyProhibited,
+};
+
+FLUTTER_DARWIN_EXPORT
+@interface FlutterShareViewController : UIViewController
+
+@property(nonatomic) FlutterShareViewControllerSwipeDismissStrategy strategy;
+@property(nonatomic, strong) FlutterViewController* flutterViewController;
+
+@end
+
+#endif  // FLUTTER_SHELL_PLATFORM_DARWIN_IOS_FRAMEWORK_HEADERS_FLUTTERSHAREVIEWCONTROLLER_H_
