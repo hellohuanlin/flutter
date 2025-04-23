@@ -35,6 +35,7 @@ _flutter_framework_headers = [
   "framework/Headers/FlutterPlugin.h",
   "framework/Headers/FlutterPluginAppLifeCycleDelegate.h",
   "framework/Headers/FlutterViewController.h",
+  "framework/Headers/FlutterShareViewController.h",
 ]
 
 _flutter_framework_headers_copy_dir = "$_flutter_framework_dir/Headers"
@@ -87,6 +88,7 @@ source_set("flutter_framework_source") {
     "framework/Source/FlutterRestorationPlugin.mm",
     "framework/Source/FlutterSemanticsScrollView.h",
     "framework/Source/FlutterSemanticsScrollView.mm",
+    "framework/Source/FlutterShareViewController.mm",
     "framework/Source/FlutterSharedApplication.h",
     "framework/Source/FlutterSharedApplication.mm",
     "framework/Source/FlutterSpellCheckPlugin.h",
