@@ -12,6 +12,48 @@
 
 FLUTTER_ASSERT_ARC
 
+
+void FLTSearchFlutterViewControllers(NSMutableArray<FlutterViewController*>* result, NSMutableSet<UIViewController*>* visited, UIViewController* viewController) {
+  if ([visited containsObject:viewController]) {
+    return;
+  }
+  [visited addObject:viewController];
+
+  if ([viewController isKindOfClass:[FlutterViewController class]]) {
+    [result addObject:(FlutterViewController*)viewController];
+  }
+
+  for (UIViewController* childViewController in viewController.childViewControllers) {
+    FLTSearchFlutterViewControllers(result, visited, childViewController);
+  }
+
+  if (viewController.presentedViewController) {
+    FLTSearchFlutterViewControllers(result, visited, viewController.presentedViewController);
+  }
+}
+
+NSArray<FlutterViewController*>* FLTSearchFlutterViewControllers(UIScene* scene) {
+  NSMutableArray<FlutterViewController*>* result = [NSMutableArray array];
+  NSMutableSet<UIViewController*>* visited = [NSMutableSet set];
+  if ([scene isKindOfClass: [UIWindowScene class]]) {
+    UIWindowScene* windowScene = (UIWindowScene*)scene;
+    for (UIWindow* window in windowScene.windows) {
+      FLTSearchFlutterViewControllers(result, visited, window.rootViewController);
+    }
+  }
+  return [result copy];
+}
+
+NSArray<FlutterEngine*>* FLTSearchFlutterEngines(UIScene* scene) {
+  NSMutableSet<FlutterEngine*>* result = [NSMutableSet set];
+  NSArray<FlutterViewController*>* flutterViewControllers = FLTSearchFlutterViewControllers(scene);
+  for (FlutterViewController* flutterViewController in flutterViewControllers) {
+    [result addObject:flutterViewController.engine];
+  }
+  return result.allObjects;
+}
+
+
 @interface FlutterPluginSceneLifeCycleDelegate ()
 
 /**
@@ -148,6 +190,10 @@ FLUTTER_ASSERT_ARC
   }
 }
 
+// This list is manually maintained:
+//    - it requires tons of work
+//    - it requires developers regsiter/unregister calls
+// However, the "source of truth" is already in the scene graph. So we just do a DFS search.
 - (NSArray*)allEngines {
   return [_flutterManagedEngines.allObjects
       arrayByAddingObjectsFromArray:_developerManagedEngines.allObjects];
@@ -204,9 +250,25 @@ FLUTTER_ASSERT_ARC
 
   [self updateFlutterManagedEnginesInScene:scene];
 
-  for (FlutterEngine* engine in [self allEngines]) {
-    [self scene:scene willConnectToSession:session flutterEngine:engine options:connectionOptions];
-  }
+  // In some cases (e.g. SwiftUI), FlutterVC is added in the current run-loop, but after this method returns.
+  // So we just need to check in the *beginning* of the next run-loop.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    for (FlutterViewController *fvc in FLTSearchFlutterViewControllers(scene)) {
+      FlutterEngine* engine = fvc.engine;
+      // We should remove this check - it is to mimic the current behavior with missing willConnectToSession, which is incorrect.
+      // See: https://github.com/flutter/flutter/issues/186547
+      // The only facter that matters is: "when is FlutterVC added to scene?"
+      //    - if it's added in the same run-loop as scene connection, we should send willConnectToSession;
+      //    - otherwise, we should not send willConnectSession.
+      BOOL createdProgrammatically = fvc.nibName == nil && fvc.storyboard == nil;
+      BOOL createdBeforeSceneConnection = engine.createdBeforeSceneConnection;
+      if (createdProgrammatically && !createdBeforeSceneConnection) {
+        continue;
+      }
+
+      [self scene:scene willConnectToSession:session flutterEngine:engine options:connectionOptions];
+    }
+  });
 }
 
 - (void)scene:(UIScene*)scene
@@ -242,7 +304,7 @@ FLUTTER_ASSERT_ARC
 
 - (void)sceneDidDisconnect:(UIScene*)scene {
   [self updateFlutterManagedEnginesInScene:scene];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     [engine.sceneLifeCycleDelegate sceneDidDisconnect:scene];
   }
   // There is no application equivalent for this event and therefore no fallback.
@@ -252,15 +314,20 @@ FLUTTER_ASSERT_ARC
 
 - (void)sceneWillEnterForeground:(UIScene*)scene {
   [self updateFlutterManagedEnginesInScene:scene];
-  for (FlutterEngine* engine in [self allEngines]) {
-    [engine.sceneLifeCycleDelegate sceneWillEnterForeground:scene];
-  }
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
+      [engine.sceneLifeCycleDelegate sceneWillEnterForeground:scene];
+    }
+  });
+
   [[self applicationLifeCycleDelegate] sceneWillEnterForegroundFallback];
 }
 
 - (void)sceneDidBecomeActive:(UIScene*)scene {
+
   [self updateFlutterManagedEnginesInScene:scene];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     [engine.sceneLifeCycleDelegate sceneDidBecomeActive:scene];
   }
   [[self applicationLifeCycleDelegate] sceneDidBecomeActiveFallback];
@@ -270,7 +337,7 @@ FLUTTER_ASSERT_ARC
 
 - (void)sceneWillResignActive:(UIScene*)scene {
   [self updateFlutterManagedEnginesInScene:scene];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     [engine.sceneLifeCycleDelegate sceneWillResignActive:scene];
   }
   [[self applicationLifeCycleDelegate] sceneWillResignActiveFallback];
@@ -278,7 +345,7 @@ FLUTTER_ASSERT_ARC
 
 - (void)sceneDidEnterBackground:(UIScene*)scene {
   [self updateFlutterManagedEnginesInScene:scene];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     [engine.sceneLifeCycleDelegate sceneDidEnterBackground:scene];
   }
   [[self applicationLifeCycleDelegate] sceneDidEnterBackgroundFallback];
@@ -291,7 +358,7 @@ FLUTTER_ASSERT_ARC
 
   // Track engines that had this event handled by a plugin.
   NSMutableSet<FlutterEngine*>* enginesHandledByPlugin = [NSMutableSet set];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     if ([engine.sceneLifeCycleDelegate scene:scene openURLContexts:URLContexts]) {
       [enginesHandledByPlugin addObject:engine];
     }
@@ -306,7 +373,7 @@ FLUTTER_ASSERT_ARC
   }
 
   // For any engine that was not handled by a plugin, do deeplinking.
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     if ([enginesHandledByPlugin containsObject:engine]) {
       continue;
     }
@@ -325,7 +392,7 @@ FLUTTER_ASSERT_ARC
 
   // Track engines that had this event handled by a plugin.
   NSMutableSet<FlutterEngine*>* enginesHandledByPlugin = [NSMutableSet set];
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     if ([engine.sceneLifeCycleDelegate scene:scene continueUserActivity:userActivity]) {
       [enginesHandledByPlugin addObject:engine];
     }
@@ -340,7 +407,7 @@ FLUTTER_ASSERT_ARC
   }
 
   // For any engine that was not handled by a plugin, do deeplinking.
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     if ([enginesHandledByPlugin containsObject:engine]) {
       continue;
     }
@@ -359,7 +426,7 @@ FLUTTER_ASSERT_ARC
 
   [self updateFlutterManagedEnginesInScene:scene];
   int64_t appBundleModifiedTime = FlutterSharedApplication.lastAppModificationTime;
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     FlutterViewController* vc = (FlutterViewController*)engine.viewController;
     NSString* restorationId = vc.restorationIdentifier;
     if (restorationId) {
@@ -392,7 +459,7 @@ FLUTTER_ASSERT_ARC
     return;
   }
 
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(scene)) {
     UIViewController* vc = (UIViewController*)engine.viewController;
     NSString* restorationId = vc.restorationIdentifier;
     if (restorationId) {
@@ -412,7 +479,7 @@ FLUTTER_ASSERT_ARC
   [self updateFlutterManagedEnginesInScene:windowScene];
 
   BOOL handledByPlugin = NO;
-  for (FlutterEngine* engine in [self allEngines]) {
+  for (FlutterEngine* engine in FLTSearchFlutterEngines(windowScene)) {
     BOOL result = [engine.sceneLifeCycleDelegate windowScene:windowScene
                                 performActionForShortcutItem:shortcutItem
                                            completionHandler:completionHandler];

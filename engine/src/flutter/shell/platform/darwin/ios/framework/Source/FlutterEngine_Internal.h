@@ -38,6 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Indicates whether this engine has **ever** been manually registered to a scene.
 @property(nonatomic, assign) BOOL manuallyRegisteredToScene;
+@property(nonatomic, readonly) BOOL createdBeforeSceneConnection;
 
 - (void)updateViewportMetrics:(flutter::ViewportMetrics)viewportMetrics;
 - (void)dispatchPointerDataPacket:(std::unique_ptr<flutter::PointerDataPacket>)packet;
@@ -93,7 +94,6 @@ NS_ASSUME_NONNULL_BEGIN
             userData:(nullable void*)userData;
 
 @property(nonatomic, readonly) FlutterDartProject* project;
-
 /**
  * Returns the engine handle. Used in FlutterEngineTest.
  */

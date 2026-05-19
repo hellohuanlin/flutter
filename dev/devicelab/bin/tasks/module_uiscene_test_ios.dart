@@ -40,7 +40,7 @@ Future<void> main(List<String> args) async {
     var destinationOverride = false;
     if (destination != null) {
       destinationOverride = true;
-      destinationDir = Directory(destination);
+      destinationDir = Directory(path.join(destination, 'flutter_uiscene_test_generated_project'));
       if (destinationDir.existsSync()) {
         destinationDir.deleteSync(recursive: true);
       }
@@ -228,7 +228,7 @@ Future<void> _installPlugins({
 
   await flutter(
     'build',
-    options: <String>['ios', '--config-only', '-v'],
+    options: <String>['ios', '--simulator', '--config-only', '-v'],
     workingDirectory: appDir.path,
   );
   await flutter('pub', options: <String>['get'], workingDirectory: appDir.path);
